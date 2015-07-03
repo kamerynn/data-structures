@@ -14,24 +14,13 @@ treeMethods.addChild = function(value){
   this.children.push(Tree(value));
 };
 
-treeMethods.contains = function(target, node){
-  node = node || this;
-  var wasFound = false;
-
-  if (node.value === target) {
-    wasFound = true;
-    return wasFound;
+treeMethods.contains = function(target) {
+  if(this.value === target) {
+    return true;
   }
-  // for loop through children
-  for (var i = 0; i < node.children.length; i++) {
-    // if contains with target, children[i]
-    wasFound = this.contains(target, node.children[i]);
-    if (wasFound) {
-      break;
-    }
-  }
-  // return wasFound
-  return wasFound;
+  return _.some(this.children, function(child) {
+    return child.contains(target);
+  });
 };
 
 
@@ -40,6 +29,6 @@ treeMethods.contains = function(target, node){
 
    addChild: O(1)
    contains:
-      average: O(log(n))
+      average: ??
       worst: O(n)
  */
