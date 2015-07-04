@@ -1,41 +1,60 @@
 var HashTable = function(){
+  this._count = 0;
   this._limit = 8;
   this._storage = LimitedArray(this._limit);
-  this._numOfTableElements = 0;
 };
 
 HashTable.prototype.insert = function(k, v){
   var i = getIndexBelowMaxForKey(k, this._limit);
-  if (this._storage.get(i) !== undefined) {
-    var tuple = this._storage.get(i);
-    // if there's space in the tuple
-    if (tuple.get(0) < 5) {
-      var emptySpot = tuple.get(0);
-      tuple.set(emptySpot, k);
-      tuple.set(emptySpot + 1, v);
+
+  var bucket = this._storage.get(i); // doubly linked list
+
+  if(!bucket) {
+    bucket = HashBucket();
+    this._storage.set(i, bucket);
+  }
+
+  var found = false;
+
+  // iterate over doubly linked list
+  bucket.each(function(node) {
+    var tuple = node.value;
+    // check if tuple.get(0) === k
+    if(tuple.get(0) === k) {
+      // overwrite tuple value
+      tuple.set(1, v);
+      found = true;
     }
+  });
 
-    // if theres no room to put our k, v inside the tuple -> rehash
-  } else {
-    // debugger;
-    var tuple = this._createTuple();
+  // if key was not found, need to add to bucket
+  if(!found) {
+    var tuple = LimitedArray(2);
+    tuple.set(0, k);
+    tuple.set(1, v);
+    bucket.addToTail(tuple);
+    this._count++;
+  }
 
-    // tuple.add([k, v])
-
-    tuple.set(1, k);
-    tuple.set(2, v);
-    // length of tuple (including length value) is at tuple[0]
-    tuple.set(0, 3);
-    console.log(tuple);
-    this._storage.set(i, tuple);
-    this._numOfTableElements++;
+  if (this._count > this._limit * 0.75) {
+    this._rehash(this._limit * 2);
   }
 };
 
 HashTable.prototype.retrieve = function(k){
+  var i = getIndexBelowMaxForKey(k, this._limit);
+
+  var bucket = this._storage.get(i);
+
+  if (!bucket) return null;
+
   var returnValue = null;
-  this._doForKeyInTuple(k, function(key, value) {
-    returnValue = value;
+
+  bucket.each(function(node) {
+    var tuple = node.value;
+    if (tuple.get(0) === k) {
+      returnValue = tuple.get(1);
+    }
   });
 
   return returnValue;
@@ -43,53 +62,44 @@ HashTable.prototype.retrieve = function(k){
 
 HashTable.prototype.remove = function(k){
   var i = getIndexBelowMaxForKey(k, this._limit);
-  this._storage.get(i).each(function(item, index, collection) {
-    if (index % 2 === 1) {
-      if (item === k) {
-        collection[index] = null; // key
-        collection[index+1] = null; // value
-      }
-    }
-  });
+  var bucket = this._storage.get(i);
+  if(!bucket) return null;
+
+  if(bucket.remove(k)) this._count--;
+
+  if (this._count < this._limit * 0.25) {
+    this._rehash(this._limit / 2);
+  }
 };
 
-HashTable.prototype._rehash = function() {
+HashTable.prototype._rehash = function(newLimit) {
   var oldStorage = this._storage;
-  this._storage = limitedArray(this._limit * 2)
+  this._storage = LimitedArray(newLimit);
+  this._count = 0;
+  this._limit = newLimit;
+  var context = this;
+
   // iterate through oldStorage
-  //    update this._limit
-  //    this.insert(k, oldstorage[i])
-};
-
-HashTable.prototype._createTuple = function() {
-  return LimitedArray(5);
-  //var linkedList = new LinkedList();
-  //return linkedList;
-};
-
-HashTable.prototype._doForKeyInTuple = function(k, cb) {
-  var i = getIndexBelowMaxForKey(k, this._limit);
-  this._storage.get(i).each(function(item, index, collection) {
-    if (index % 2 === 1) {
-      if (item === k) {
-        var key = item;
-        var value = collection[index+1];
-        cb(key, value);
-      }
+  oldStorage.each(function(bucket) {
+    if (bucket) {
+      bucket.each(function(node) {
+        var tuple = node.value;
+        context.insert(tuple.get(0), tuple.get(1));
+      });
     }
   });
 };
-
-// [k1, v1, k2, v2, k3, v3] <-- k4, v4
-// collision > find length, create a new limited array with length = length + 2
-// [k1, v1, k2, v2]
-
-// at some index that has no collision: [ , , , , , ]
-// at some index that has collision: [key1, value1, key2, value2]
-// for (var i = 0; i < collisionArray.length; i + 2) {
-//  if collisionArray[i] === keyName -> return collisionArray[i+1];
-// }
 
 /*
  * Complexity: What is the time complexity of the above functions?
+  insert():
+    avg:    O(1)
+    worst:  O(n)
+  retrieve():
+    avg:    O(1)
+    worst:  O(n)
+  remove():
+    avg:    O(1)
+    worst:  O(n)
+ *
  */

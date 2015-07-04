@@ -53,3 +53,8 @@ var getIndexBelowMaxForKey = function(str, max){
 /*
  * Complexity: What is the time complexity of the above functions?
  */
+
+
+console.log(getIndexBelowMaxForKey('cat', 8));
+console.log(getIndexBelowMaxForKey('sup', 8));
+console.log(getIndexBelowMaxForKey('supercalafreg', 8));
