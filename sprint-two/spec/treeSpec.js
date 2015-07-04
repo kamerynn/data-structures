@@ -54,4 +54,18 @@ describe('tree', function() {
     expect(arr).to.eql([4, 5, 7, 6, 8]);
   });
 
+  it('should have parent property pointing to parent', function() {
+    tree.value = 4;
+    tree.addChild(5);
+    expect(tree.children[0].parent).to.equal(tree);
+  });
+
+  it('should correctly remove from parent', function() {
+    tree.value = 4;
+    tree.addChild(5);
+    var child = tree.children[0];
+    child.removeFromParent();
+    expect(tree.contains(child.value)).to.equal(false);
+  });
+
 });
